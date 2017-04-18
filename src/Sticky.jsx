@@ -128,19 +128,21 @@ class Sticky extends Component {
     /**
      * Update the initial position, width, and height. It should update whenever children change.
      * @param {Object} options optional top and bottomBoundary new values
+     * @param {function} callback function to call once initial dimensions have updated
      */
-    updateInitialDimension (options) {
-        options = options || {}
+    updateInitialDimension (options, callback) {
+        options = options || {};
 
-        var {outer, inner} = this.refs;
+        const {outer, inner} = this.refs;
+  
+        const outerRect = outer.getBoundingClientRect();
+        const innerRect = inner.getBoundingClientRect();
+        
+        const width = outerRect.width || outerRect.right - outerRect.left;
+        const height = innerRect.height || innerRect.bottom - innerRect.top;
+        const outerY = outerRect.top + this.scrollTop;
 
-        var outerRect = outer.getBoundingClientRect();
-        var innerRect = inner.getBoundingClientRect();
-
-        var width = outerRect.width || outerRect.right - outerRect.left;
-        var height = innerRect.height || innerRect.bottom - innerRect.top;;
-        var outerY = outerRect.top + this.scrollTop;
-
+        
         this.setState({
             top: this.getTopPosition(options.top),
             bottom: Math.min(this.state.top + height, winHeight),
@@ -150,7 +152,7 @@ class Sticky extends Component {
             y: outerY,
             bottomBoundary: this.getBottomBoundary(options.bottomBoundary),
             topBoundary: outerY
-        });
+        }, callback);
     }
 
     handleResize (e, ae) {
@@ -159,8 +161,9 @@ class Sticky extends Component {
         }
 
         winHeight = ae.resize.height;
-        this.updateInitialDimension();
-        this.update();
+        this.updateInitialDimension(null, () => {
+          this.update();
+        });
     }
 
     handleScrollStart (e, ae) {
@@ -284,8 +287,9 @@ class Sticky extends Component {
     }
 
     componentWillReceiveProps (nextProps) {
-        this.updateInitialDimension(nextProps);
-        this.update();
+        this.updateInitialDimension(nextProps, () => {
+          this.update();
+        });
     }
 
     componentDidUpdate(prevProps, prevState) {
@@ -296,8 +300,9 @@ class Sticky extends Component {
         if (prevProps.enabled !== this.props.enabled) {
             if (this.props.enabled) {
                 this.setState({activated: true}, () => {
-                    this.updateInitialDimension();
-                    this.update();
+                    this.updateInitialDimension(null, () => {
+                      this.update();
+                    });
                 });
             } else {
                 this.setState({activated: false}, () => {
@@ -336,8 +341,9 @@ class Sticky extends Component {
 
         if (this.props.enabled) {
             this.setState({activated: true});
-            this.updateInitialDimension();
-            this.update();
+            this.updateInitialDimension(null, () => {
+                this.update();
+            });
         }
         // bind the listeners regardless if initially enabled - allows the component to toggle sticky functionality
         this.subscribers = [
